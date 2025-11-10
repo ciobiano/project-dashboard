@@ -1,0 +1,1105 @@
+[
+  {
+    "id": "T001",
+    "Task Name": "Design System & Dark Theme Foundation",
+    "Description": "Establish Tailwind theme tokens, typography scale, spacing, and component primitives using shadcn/ui with dark mode as the default; document usage so engineers can implement screens consistently.",
+    "Assignee/Team": "Design + Frontend",
+    "Priority": "High",
+    "Status": "To Do",
+    "Acceptance Criteria": [
+      "Global color/typography/spacing tokens defined in Tailwind config with dark-mode defaults and light-mode tokens mapped",
+      "shadcn/ui primitives themed to match PRD visuals (buttons, tabs, dialog, dropdown, badge, avatar, chips)",
+      "Documented guidance for component states, elevation, and keyboard focus",
+      "Theme toggle available and WCAG 2.1 AA contrast validated on core components"
+    ],
+    "Dependencies": [],
+    "Subtasks": [
+      {
+        "id": "T001-1",
+        "Task Name": "Tailwind token architecture",
+        "Description": "Define color, typography, and spacing tokens in Tailwind config, including dark/light variants and semantic aliases for statuses.",
+        "Assignee/Team": "Design",
+        "Acceptance Criteria": [
+          "tailwind.config contains semantic tokens referenced by components",
+          "Tokens reviewed with PM for alignment to PRD screenshot"
+        ],
+        "Dependencies": []
+      },
+      {
+        "id": "T001-2",
+        "Task Name": "shadcn/ui theming",
+        "Description": "Generate shadcn components, apply Tailwind tokens, and verify states for buttons, tabs, dialog, dropdown, badge, and avatar.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Storybook or docs show updated styling for each primitive",
+          "Dark mode renders correctly with hover/focus states"
+        ],
+        "Dependencies": ["T001-1"]
+      },
+      {
+        "id": "T001-3",
+        "Task Name": "Theme toggle + accessibility review",
+        "Description": "Implement theme toggle component, persist preference, and run contrast/accessibility audit on core UI.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Toggle switches instantly without layout shift",
+          "axe scan passes for themed components"
+        ],
+        "Dependencies": ["T001-2"]
+      }
+    ]
+  },
+  {
+    "id": "T002",
+    "Task Name": "Authentication & Multi-Tenant Session Layer",
+    "Description": "Implement NextAuth with email/OAuth providers, persist workspace memberships, and ensure JWT/session carries workspaceId and role for RBAC enforcement.",
+    "Assignee/Team": "Platform Engineering",
+    "Priority": "High",
+    "Status": "To Do",
+    "Acceptance Criteria": [
+      "Users can sign up/in via configured providers and land inside last workspace",
+      "Session includes workspaceId, memberId, and role; rotatable without logout",
+      "Server route handlers reject access when user not in workspace",
+      "Basic onboarding flow to create/select workspace covered by unit tests"
+    ],
+    "Dependencies": [],
+    "Subtasks": [
+      {
+        "id": "T002-1",
+        "Task Name": "NextAuth provider setup",
+        "Description": "Configure email and OAuth providers, env secrets, and callbacks for multi-tenant claims.",
+        "Assignee/Team": "Platform",
+        "Acceptance Criteria": [
+          "Sign-in works locally with mocked providers",
+          "Provider errors surfaced via toast/UI"
+        ],
+        "Dependencies": []
+      },
+      {
+        "id": "T002-2",
+        "Task Name": "Workspace membership persistence",
+        "Description": "Create Prisma models for user, workspace, member; update callbacks to attach workspaceId/role to session token.",
+        "Assignee/Team": "Backend",
+        "Acceptance Criteria": [
+          "Membership queries scoped by user id",
+          "Session object exposes workspace context"
+        ],
+        "Dependencies": ["T002-1"]
+      },
+      {
+        "id": "T002-3",
+        "Task Name": "Onboarding & RLS guards",
+        "Description": "Implement last-workspace redirect, workspace picker, and middleware to enforce membership on API routes.",
+        "Assignee/Team": "Platform",
+        "Acceptance Criteria": [
+          "Unauthorized access redirected to selector",
+          "Unit tests cover guard middleware"
+        ],
+        "Dependencies": ["T002-2"]
+      }
+    ]
+  },
+  {
+    "id": "T003",
+    "Task Name": "Workspace, Folder, Project CRUD & RBAC",
+    "Description": "Model Workspace/Folder/Project tables in Prisma, expose REST/Route handlers for CRUD, ordering, and inline rename with role checks.",
+    "Assignee/Team": "Backend Engineering",
+    "Priority": "High",
+    "Status": "To Do",
+    "Acceptance Criteria": [
+      "Prisma migrations for workspace, member, folder, project with order columns",
+      "GET/POST/PATCH/DELETE endpoints for folders/projects scoped by workspace",
+      "Inline rename API enforces Owner/Member permissions and emits activity event",
+      "Unit tests for Zod schemas and RBAC guards"
+    ],
+    "Dependencies": ["T002"],
+    "Subtasks": [
+      {
+        "id": "T003-1",
+        "Task Name": "Prisma schema + migrations",
+        "Description": "Add folder/project models with order fields and run migrations for base data sets.",
+        "Assignee/Team": "Backend",
+        "Acceptance Criteria": [
+          "Prisma migrate runs cleanly on fresh DB",
+          "Seed script creates sample workspace hierarchy"
+        ],
+        "Dependencies": ["T002-2"]
+      },
+      {
+        "id": "T003-2",
+        "Task Name": "CRUD route handlers",
+        "Description": "Implement Next.js route handlers for folder/project CRUD with Zod validation and workspace scoping.",
+        "Assignee/Team": "Backend",
+        "Acceptance Criteria": [
+          "All routes return 401/403 when user lacks membership",
+          "Swagger or typed client documents payloads"
+        ],
+        "Dependencies": ["T003-1"]
+      },
+      {
+        "id": "T003-3",
+        "Task Name": "Inline rename + RBAC tests",
+        "Description": "Add inline rename mutation, emit activity events, and cover RBAC logic with unit tests.",
+        "Assignee/Team": "Backend",
+        "Acceptance Criteria": [
+          "Rename limited to Owner/Member roles",
+          "Vitest suite covers success/failure cases"
+        ],
+        "Dependencies": ["T003-2"]
+      }
+    ]
+  },
+  {
+    "id": "T004",
+    "Task Name": "Team Invitations & Role Management UI",
+    "Description": "Ship invite modal and member management UI so Owners can invite users, set Owner/Member/Guest roles, and resend invites.",
+    "Assignee/Team": "Frontend + Backend",
+    "Priority": "High",
+    "Status": "To Do",
+    "Acceptance Criteria": [
+      "Invite modal validates emails via react-hook-form + zod and calls POST /api/invite",
+      "Role dropdown disabled for Guests without privilege",
+      "Invited members receive status badge until accepted",
+      "Audit trail records invites and role changes"
+    ],
+    "Dependencies": ["T003"],
+    "Subtasks": [
+      {
+        "id": "T004-1",
+        "Task Name": "Invite API + email template",
+        "Description": "Implement POST /api/invite to create pending members and send email using transactional provider.",
+        "Assignee/Team": "Backend",
+        "Acceptance Criteria": [
+          "Endpoint enforces Owner role",
+          "Email template localizable and renders invite link"
+        ],
+        "Dependencies": ["T003-2"]
+      },
+      {
+        "id": "T004-2",
+        "Task Name": "Member management UI",
+        "Description": "Create list view of members with role badges, status, and actions for Owners.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Role changes debounce and reflect instantly",
+          "Guests cannot modify others"
+        ],
+        "Dependencies": ["T004-1"]
+      },
+      {
+        "id": "T004-3",
+        "Task Name": "Audit trail + resend",
+        "Description": "Persist audit entries for invites/role edits and add resend invite action with confirmation modal.",
+        "Assignee/Team": "Full Stack",
+        "Acceptance Criteria": [
+          "Activity feed shows invite/resend events",
+          "Resend respects cooldown timer"
+        ],
+        "Dependencies": ["T004-2"]
+      }
+    ]
+  },
+  {
+    "id": "T005",
+    "Task Name": "Sidebar Navigation & Folder Tree UI",
+    "Description": "Implement collapsible left rail with workspace switcher, main nav, folders/projects tree, keyboard navigation, and persisted open state.",
+    "Assignee/Team": "Frontend Engineering",
+    "Priority": "High",
+    "Status": "To Do",
+    "Acceptance Criteria": [
+      "Tree renders workspace > folders > projects with virtualized list for long trees",
+      "Keyboard shortcuts [`[`, `]`, arrow keys] navigate and toggle nodes with visible focus state",
+      "Last opened folder/project restored from localStorage on reload",
+      "Screen-reader announces hierarchy via aria-treegrid roles"
+    ],
+    "Notes": [
+      "Most sidebar functionality implemented (workspace switcher, TanStack Query data, dialog-based folder creation, keyboard navigation, persistence). Remaining gap: integrate virtualization for large workspace trees."
+    ],
+    "Dependencies": ["T001", "T003"],
+    "Subtasks": [
+      {
+        "id": "T005-1",
+        "Task Name": "Data fetching + caching",
+        "Description": "Build hooks to fetch workspace tree data with TanStack Query and cache per workspace.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Folders/projects load with skeleton state",
+          "Errors handled with retry toast"
+        ],
+        "Dependencies": ["T003-2"]
+      },
+      {
+        "id": "T005-2",
+        "Task Name": "Tree component with keyboard support",
+        "Description": "Create aria-treegrid compliant component, implement arrow navigation, and collapse/expand shortcuts.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Focusable nodes show indicator",
+          "`[` and `]` collapse/expand works"
+        ],
+        "Dependencies": ["T005-1"]
+      },
+      {
+        "id": "T005-3",
+        "Task Name": "State persistence + workspace switcher",
+        "Description": "Persist open nodes in localStorage and add workspace switcher dropdown with avatar/badge.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Reload restores open branch",
+          "Workspace switch updates context without reload"
+        ],
+        "Dependencies": ["T005-2"]
+      }
+    ]
+  },
+  {
+    "id": "T006",
+    "Task Name": "Project Header & Breadcrumb Actions",
+    "Description": "Build project page header with breadcrumb, inline renaming, Share and Settings actions honoring permissions, and status surface.",
+    "Assignee/Team": "Frontend Engineering",
+    "Priority": "High",
+    "Status": "To Do",
+    "Acceptance Criteria": [
+      "Breadcrumb shows Workspace > Folder > Project with links",
+      "Inline rename submits on Enter and reverts on Escape with optimistic update",
+      "Share button opens invite modal scoped to the project",
+      "Settings button visible only to Owners/Members and routes correctly"
+    ],
+    "Dependencies": ["T005"],
+    "Subtasks": [
+      {
+        "id": "T006-1",
+        "Task Name": "Breadcrumb component",
+        "Description": "Render breadcrumb trail with responsive truncation and keyboard navigability.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Links accessible via tab order",
+          "Mobile layout collapses gracefully"
+        ],
+        "Dependencies": ["T005-1"]
+      },
+      {
+        "id": "T006-2",
+        "Task Name": "Inline rename interaction",
+        "Description": "Implement editable project name field with optimistic mutation and error rollback.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Enter saves, Escape cancels",
+          "Validation errors surfaced inline"
+        ],
+        "Dependencies": ["T006-1", "T003-3"]
+      },
+      {
+        "id": "T006-3",
+        "Task Name": "Actions bar integration",
+        "Description": "Hook Share button to invite modal, gate Settings button by role, and emit analytics events.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Role guard hides actions for Guests",
+          "Click tracking flows to PostHog"
+        ],
+        "Dependencies": ["T004-2", "T006-2"]
+      }
+    ]
+  },
+  {
+    "id": "T007",
+    "Task Name": "Billing & Entitlements Platform Integration",
+    "Description": "Integrate Stripe Checkout + customer portal, track workspace plan status, and expose entitlements API consumed by UI and server guards.",
+    "Assignee/Team": "Backend + Platform",
+    "Priority": "High",
+    "Status": "To Do",
+    "Acceptance Criteria": [
+      "Stripe products/plans configured for Free vs Pro ($9/mo)",
+      "POST /api/stripe/checkout creates checkout for current workspace, stores subscription status",
+      "Entitlements helper returns booleans for gated features and cached per workspace",
+      "Automated tests cover downgrade/upgrade lifecycle edge cases"
+    ],
+    "Dependencies": ["T002"],
+    "Subtasks": [
+      {
+        "id": "T007-1",
+        "Task Name": "Stripe product + webhook setup",
+        "Description": "Create Stripe products/prices, configure webhook handler for subscription lifecycle, and persist status.",
+        "Assignee/Team": "Platform",
+        "Acceptance Criteria": [
+          "Webhook retries idempotent",
+          "Workspace plan state updated on events"
+        ],
+        "Dependencies": ["T002-2"]
+      },
+      {
+        "id": "T007-2",
+        "Task Name": "Checkout/portal endpoints",
+        "Description": "Implement API routes to initiate checkout and open customer portal tied to workspace owner.",
+        "Assignee/Team": "Backend",
+        "Acceptance Criteria": [
+          "Unauthorized users receive 403",
+          "Success redirects back with status toast"
+        ],
+        "Dependencies": ["T007-1"]
+      },
+      {
+        "id": "T007-3",
+        "Task Name": "Entitlements helper + caching",
+        "Description": "Expose helper that resolves plan entitlements with caching layer accessible by UI and server guards.",
+        "Assignee/Team": "Platform",
+        "Acceptance Criteria": [
+          "Helper available via React context/server util",
+          "Cache invalidates after plan change"
+        ],
+        "Dependencies": ["T007-2"]
+      }
+    ]
+  },
+  {
+    "id": "T008",
+    "Task Name": "Upgrade Banner & Pro Gate Surfacing",
+    "Description": "Render upgrade CTA banner on project pages for non-Pro workspaces, allow dismiss per workspace for 7 days, and display lock states on gated features.",
+    "Assignee/Team": "Frontend",
+    "Priority": "Medium",
+    "Status": "To Do",
+    "Acceptance Criteria": [
+      "Banner shows plan benefits, links to billing page, and respects theme",
+      "Dismiss action stored per workspace with expiry timestamp in storage/db",
+      "Planner tab and advanced filters show lock icon/tooltips for Free users",
+      "QA checklist confirms banner hidden for Pro workspaces"
+    ],
+    "Dependencies": ["T007", "T006"],
+    "Subtasks": [
+      {
+        "id": "T008-1",
+        "Task Name": "Banner component + content",
+        "Description": "Design and build responsive banner with CTA button linking to billing page and optional checklist of benefits.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Dismiss/learn more actions accessible",
+          "Dark/light styles match design"
+        ],
+        "Dependencies": ["T001-2"]
+      },
+      {
+        "id": "T008-2",
+        "Task Name": "Dismiss persistence",
+        "Description": "Store banner dismissal per workspace with 7-day expiry using localStorage fallback + server flag.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Dismiss state synced across tabs",
+          "Expired dismiss automatically shows banner"
+        ],
+        "Dependencies": ["T008-1"]
+      },
+      {
+        "id": "T008-3",
+        "Task Name": "Gated UI indicators",
+        "Description": "Add lock icons/tooltips to Planner tab and advanced filters when entitlements missing, linking to upgrade.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Free users see disabled state",
+          "Pro users bypass gating"
+        ],
+        "Dependencies": ["T007-3", "T008-2"]
+      }
+    ]
+  },
+  {
+    "id": "T009",
+    "Task Name": "Quick Action Modals (Task/Project/Folder)",
+    "Description": "Provide quick-action cards that open modal forms for creating tasks, projects, and folders using react-hook-form + zod validation.",
+    "Assignee/Team": "Frontend",
+    "Priority": "High",
+    "Status": "To Do",
+    "Acceptance Criteria": [
+      "Cards render per PRD layout and accessible via keyboard shortcuts",
+      "Task modal validates required fields, creates task via API, and focuses created item",
+      "Project/Folder modals support picking parent scope and optimistic insert ordering",
+      "Form errors surfaced inline; loading states displayed on submit"
+    ],
+    "Dependencies": ["T006", "T010"],
+    "Subtasks": [
+      {
+        "id": "T009-1",
+        "Task Name": "Modal shell + shortcuts",
+        "Description": "Implement modal components with shared form layout and register keyboard shortcuts to open them.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "`N`, `P`, `F` shortcuts focus correct modal",
+          "Modal focus trap passes accessibility check"
+        ],
+        "Dependencies": ["T019-1"]
+      },
+      {
+        "id": "T009-2",
+        "Task Name": "Task creation form",
+        "Description": "Build task form using react-hook-form + zod, integrate with task create API, and autofocus new task.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Validation errors inline",
+          "On success list scrolls to new task"
+        ],
+        "Dependencies": ["T010-2"]
+      },
+      {
+        "id": "T009-3",
+        "Task Name": "Project/Folder creation forms",
+        "Description": "Add forms for project/folder creation with parent selection and optimistic insertion order handling.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Selecting folder updates API payload",
+          "Drag order recalculated if inserted mid-list"
+        ],
+        "Dependencies": ["T003-2"]
+      }
+    ]
+  },
+  {
+    "id": "T010",
+    "Task Name": "Task Schema, CRUD APIs & Validation",
+    "Description": "Add Prisma model and REST endpoints for Task plus reorder mutations, ensuring optimistic-friendly responses and audit logging hooks.",
+    "Assignee/Team": "Backend",
+    "Priority": "High",
+    "Status": "To Do",
+    "Acceptance Criteria": [
+      "Prisma Task model matches PRD fields (status, priority, assigneeIds array, order, timestamps)",
+      "POST/PATCH endpoints validate via Zod and enforce workspace/project ownership",
+      "Reorder endpoint accepts {status, order} payload and rebases positions atomically",
+      "Activity events emitted for create/update/delete"
+    ],
+    "Dependencies": ["T003"],
+    "Subtasks": [
+      {
+        "id": "T010-1",
+        "Task Name": "Prisma model + migration",
+        "Description": "Define Task model with enums and relations plus migration covering indexes for order and projectId.",
+        "Assignee/Team": "Backend",
+        "Acceptance Criteria": [
+          "Migration succeeds on clean DB",
+          "Indices created for status/order"
+        ],
+        "Dependencies": ["T003-1"]
+      },
+      {
+        "id": "T010-2",
+        "Task Name": "CRUD endpoints",
+        "Description": "Implement POST/PATCH/DELETE handlers with zod validation and workspace RBAC guard.",
+        "Assignee/Team": "Backend",
+        "Acceptance Criteria": [
+          "Responses optimized for optimistic updates",
+          "Unit tests cover permission failures"
+        ],
+        "Dependencies": ["T010-1"]
+      },
+      {
+        "id": "T010-3",
+        "Task Name": "Reorder & activity hooks",
+        "Description": "Create reorder mutation to batch updates and emit activity events for audit log.",
+        "Assignee/Team": "Backend",
+        "Acceptance Criteria": [
+          "Atomic reorder prevents gaps",
+          "Activity table stores change metadata"
+        ],
+        "Dependencies": ["T010-2"]
+      }
+    ]
+  },
+  {
+    "id": "T011",
+    "Task Name": "Overview Task View with Virtualized Lists",
+    "Description": "Build Overview tab showing grouped task lists (To Do, In Progress, Done, Backlog) with priority chips, assignee stacks, and TanStack Table virtualization.",
+    "Assignee/Team": "Frontend",
+    "Priority": "High",
+    "Status": "To Do",
+    "Acceptance Criteria": [
+      "Groups render based on Status with accurate counts and skeleton loading states",
+      ">200 tasks still scroll smoothly via react-virtual with dynamic row heights",
+      "Assignee avatar stack displays up to 3 users with overflow + tooltip",
+      "Empty states and quick-add affordance match design"
+    ],
+    "Dependencies": ["T001", "T010"],
+    "Subtasks": [
+      {
+        "id": "T011-1",
+        "Task Name": "Data hook + status grouping",
+        "Description": "Create hook to fetch tasks and group by status with memoized selectors and optimistic cache updates.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "TanStack Query cache updates after mutations",
+          "Groups show correct counts"
+        ],
+        "Dependencies": ["T010-2"]
+      },
+      {
+        "id": "T011-2",
+        "Task Name": "Virtualized list rendering",
+        "Description": "Implement react-virtual list per status column with skeleton loaders for >200 tasks.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Scroll performance measured <16ms",
+          "Empty state displayed when no tasks"
+        ],
+        "Dependencies": ["T011-1"]
+      },
+      {
+        "id": "T011-3",
+        "Task Name": "Task row UI",
+        "Description": "Create task row component with priority chip, assignee stack, quick actions, and keyboard focus ring.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Avatar stack shows overflow tooltip",
+          "Keyboard shortcuts operate on focused row"
+        ],
+        "Dependencies": ["T011-2", "T001-2"]
+      }
+    ]
+  },
+  {
+    "id": "T012",
+    "Task Name": "Drag-and-Drop Reordering & Status Changes",
+    "Description": "Implement @dnd-kit interactions for dragging tasks within a status or to another status with optimistic updates and rollback on failure.",
+    "Assignee/Team": "Frontend",
+    "Priority": "High",
+    "Status": "To Do",
+    "Acceptance Criteria": [
+      "Drag handle available on hover/focus; accessible fallback buttons for move up/down",
+      "Dragging across groups updates status, order, and chips immediately",
+      "Reorder mutation batched; errors revert UI and show toast",
+      "P95 drag-drop latency under 100ms in test dataset"
+    ],
+    "Dependencies": ["T011", "T010"],
+    "Subtasks": [
+      {
+        "id": "T012-1",
+        "Task Name": "DnD kit integration",
+        "Description": "Integrate @dnd-kit with sensors, drag handles, and collision detection tuned for vertical lists.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Drag preview matches row width",
+          "Keyboard DnD fallback documented"
+        ],
+        "Dependencies": ["T011-3"]
+      },
+      {
+        "id": "T012-2",
+        "Task Name": "Optimistic reorder logic",
+        "Description": "Update client cache when dragging, batch reorder payload, and rollback on API error.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Reorder mutation merges statuses correctly",
+          "Failures restore previous order"
+        ],
+        "Dependencies": ["T012-1", "T010-3"]
+      },
+      {
+        "id": "T012-3",
+        "Task Name": "Performance profiling",
+        "Description": "Measure drag latency with >500 tasks and optimize virtualization/dnd settings.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Profile report documents P95 metrics",
+          "Fixes applied for hotspots"
+        ],
+        "Dependencies": ["T012-2"]
+      }
+    ]
+  },
+  {
+    "id": "T013",
+    "Task Name": "Filters, Search, Sorting & URL Sync",
+    "Description": "Add filter panel for status/priority/assignee/due date, full-text search, sort controls, and encode state into query params for shareable URLs.",
+    "Assignee/Team": "Frontend",
+    "Priority": "High",
+    "Status": "To Do",
+    "Acceptance Criteria": [
+      "Filter chips and dropdowns update list instantly with debounce",
+      "Search hits title and description with highlight of query term",
+      "Sort options (priority, updatedAt, dueDate) persist in URL and survive refresh",
+      "QA verifies gated filters obey entitlements"
+    ],
+    "Dependencies": ["T011", "T007"],
+    "Subtasks": [
+      {
+        "id": "T013-1",
+        "Task Name": "Filter state management",
+        "Description": "Build Zustand or reducer-based store to track filters, sorts, and search query with debouncing.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "State serializes to query params",
+          "Debounce prevents excessive requests"
+        ],
+        "Dependencies": ["T011-1"]
+      },
+      {
+        "id": "T013-2",
+        "Task Name": "UI controls + gating",
+        "Description": "Implement filter chips, multi-selects, and lock indicators for Pro-only filters using entitlements helper.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Free users see disabled advanced filters",
+          "Tooltips explain gating"
+        ],
+        "Dependencies": ["T007-3", "T013-1"]
+      },
+      {
+        "id": "T013-3",
+        "Task Name": "URL sync + shareable links",
+        "Description": "Sync filter/search/sort state to URL query params and ensure deep links restore state on load.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Copy/paste URL reproduces view",
+          "Back/forward navigation works"
+        ],
+        "Dependencies": ["T013-2"]
+      }
+    ]
+  },
+  {
+    "id": "T014",
+    "Task Name": "Board View (Kanban) Parity",
+    "Description": "Develop Kanban tab with columns per status, DnD parity with Overview, swimlane headers, and responsive layout.",
+    "Assignee/Team": "Frontend",
+    "Priority": "High",
+    "Status": "To Do",
+    "Acceptance Criteria": [
+      "Columns render with sticky headers and task cards reuse Overview components",
+      "Drag between columns updates status/order with same logic as Overview",
+      "Column virtualization or lazy rendering maintains performance on large sets",
+      "URL param toggles between Overview/Board without full reload"
+    ],
+    "Dependencies": ["T012"],
+    "Subtasks": [
+      {
+        "id": "T014-1",
+        "Task Name": "Kanban layout + tabs",
+        "Description": "Add tab navigation between Overview/Board, build responsive column layout with scroll containers.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Tabs keyboard accessible",
+          "Columns resize on viewport change"
+        ],
+        "Dependencies": ["T011-3"]
+      },
+      {
+        "id": "T014-2",
+        "Task Name": "Column virtualization",
+        "Description": "Implement lazy rendering per column to keep DOM nodes minimal for large boards.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Memory usage documented",
+          "Placeholder skeletons shown while loading"
+        ],
+        "Dependencies": ["T014-1"]
+      },
+      {
+        "id": "T014-3",
+        "Task Name": "DnD parity + analytics",
+        "Description": "Reuse DnD handlers from Overview, ensure analytics events fire for board interactions.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Drag updates order/status via same API",
+          "PostHog events track board usage"
+        ],
+        "Dependencies": ["T012-2", "T014-2"]
+      }
+    ]
+  },
+  {
+    "id": "T015",
+    "Task Name": "Planner Calendar (Pro Feature)",
+    "Description": "Introduce Planner tab using react-big-calendar to show tasks by due date, with Pro gating and read-only teaser for Free workspaces.",
+    "Assignee/Team": "Frontend",
+    "Priority": "Medium",
+    "Status": "To Do",
+    "Acceptance Criteria": [
+      "Calendar view fetches tasks with dueDate and displays multi-day spans",
+      "Drag to change due date updates backend with optimistic feedback",
+      "Free users see locked state with upgrade CTA; Pro users access fully",
+      "Keyboard navigation and accessibility roles validated"
+    ],
+    "Dependencies": ["T007", "T010"],
+    "Subtasks": [
+      {
+        "id": "T015-1",
+        "Task Name": "Calendar scaffold",
+        "Description": "Integrate react-big-calendar, configure views, and load tasks grouped by dueDate.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Month/week views toggle",
+          "Loading states displayed"
+        ],
+        "Dependencies": ["T010-2"]
+      },
+      {
+        "id": "T015-2",
+        "Task Name": "Drag-to-reschedule",
+        "Description": "Enable drag/drop within calendar to move tasks and call PATCH endpoint to update dueDate.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Optimistic move updates UI",
+          "Errors revert to previous date"
+        ],
+        "Dependencies": ["T015-1", "T010-2"]
+      },
+      {
+        "id": "T015-3",
+        "Task Name": "Pro gating + teaser",
+        "Description": "Lock Planner for Free workspaces with overlay and CTA plus read-only preview if allowed.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Entitlement check guards data fetch",
+          "CTA routes to billing"
+        ],
+        "Dependencies": ["T007-3", "T015-2"]
+      }
+    ]
+  },
+  {
+    "id": "T016",
+    "Task Name": "Comments & Activity Drawer",
+    "Description": "Add task drawer with comment thread, activity log, @mentions, and notifications trigger hooks per PRD v1.1 scope.",
+    "Assignee/Team": "Full Stack",
+    "Priority": "Medium",
+    "Status": "To Do",
+    "Acceptance Criteria": [
+      "Drawer opens from task row/card, shows comment composer with markdown/light formatting",
+      "Activity feed lists updates with actor avatar and timestamp",
+      "@mentions autocomplete workspace members and notify mentioned user",
+      "API routes POST /api/tasks/:id/comments and activity query covered by tests"
+    ],
+    "Dependencies": ["T010", "T017"],
+    "Subtasks": [
+      {
+        "id": "T016-1",
+        "Task Name": "Comment API + schema",
+        "Description": "Define Comment model, route handlers, and validation for create/list endpoints.",
+        "Assignee/Team": "Backend",
+        "Acceptance Criteria": [
+          "Comments ordered chronologically",
+          "Permissions restrict Guests if needed"
+        ],
+        "Dependencies": ["T010-1"]
+      },
+      {
+        "id": "T016-2",
+        "Task Name": "Drawer UI + composer",
+        "Description": "Implement slide-out drawer with comment list, markdown-lite composer, and attachment stub.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Drawer accessible via keyboard",
+          "Optimistic comment insertion"
+        ],
+        "Dependencies": ["T016-1"]
+      },
+      {
+        "id": "T016-3",
+        "Task Name": "Mentions + activity feed",
+        "Description": "Add member autocomplete for @mentions, trigger notifications, and display activity log entries.",
+        "Assignee/Team": "Full Stack",
+        "Acceptance Criteria": [
+          "Mentions highlight in UI",
+          "Activity list shows actor, action, timestamp"
+        ],
+        "Dependencies": ["T016-2", "T017-2"]
+      }
+    ]
+  },
+  {
+    "id": "T017",
+    "Task Name": "Realtime Events & Notification Backend",
+    "Description": "Stand up Pusher/Ably or WS route emitting task/comment events, plus job handler for inbox/email notifications using Inngest/Trigger.dev.",
+    "Assignee/Team": "Backend + Infrastructure",
+    "Priority": "High",
+    "Status": "To Do",
+    "Acceptance Criteria": [
+      "task.created/updated/reordered/deleted and comment.created events published with workspace scoping",
+      "Client subscribes by project; unauthorized subscriptions rejected",
+      "Notification worker enqueues inbox items and optional email via Resend",
+      "Load test demonstrates fan-out within budget"
+    ],
+    "Dependencies": ["T010", "T002"],
+    "Subtasks": [
+      {
+        "id": "T017-1",
+        "Task Name": "Realtime infrastructure setup",
+        "Description": "Provision Pusher/Ably keys or build WS route handler with auth middleware and channel naming conventions.",
+        "Assignee/Team": "Infra",
+        "Acceptance Criteria": [
+          "Connections authenticated per workspace",
+          "Env config documented"
+        ],
+        "Dependencies": ["T002-3"]
+      },
+      {
+        "id": "T017-2",
+        "Task Name": "Event publishing hooks",
+        "Description": "Emit events from task/comment mutations and ensure payload minimized for client updates.",
+        "Assignee/Team": "Backend",
+        "Acceptance Criteria": [
+          "Events cover create/update/delete/reorder",
+          "Unit tests assert payload shape"
+        ],
+        "Dependencies": ["T010-3", "T016-1"]
+      },
+      {
+        "id": "T017-3",
+        "Task Name": "Notification worker",
+        "Description": "Implement Inngest/Trigger.dev workflow to create inbox entries and optional Resend emails on mentions/assignments.",
+        "Assignee/Team": "Backend",
+        "Acceptance Criteria": [
+          "Retries handled with exponential backoff",
+          "Worker metrics exported"
+        ],
+        "Dependencies": ["T017-2"]
+      }
+    ]
+  },
+  {
+    "id": "T018",
+    "Task Name": "Inbox & Notification UI",
+    "Description": "Build Inbox surface showing mentions/assignments with filters, mark-as-read, and real-time updates tied to backend notifications.",
+    "Assignee/Team": "Frontend",
+    "Priority": "Medium",
+    "Status": "To Do",
+    "Acceptance Criteria": [
+      "Inbox page lists notifications grouped by unread/read with timestamps",
+      "Mark-as-read updates server and removes badge state instantly",
+      "Mentions triggered from comments create inbox entries linked back to task",
+      "Reduced-motion setting respected in toast animations"
+    ],
+    "Dependencies": ["T017"],
+    "Subtasks": [
+      {
+        "id": "T018-1",
+        "Task Name": "Inbox data hooks",
+        "Description": "Create queries/mutations for fetching notifications, pagination, and mark-as-read endpoint integration.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Unread badge count syncs with header",
+          "Mark-as-read optimistic"
+        ],
+        "Dependencies": ["T017-3"]
+      },
+      {
+        "id": "T018-2",
+        "Task Name": "Inbox UI + filters",
+        "Description": "Design list layout with unread grouping, filter chips (mentions, assignments), and deep links back to tasks.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Click opens associated task drawer",
+          "Filters persist between visits"
+        ],
+        "Dependencies": ["T018-1"]
+      },
+      {
+        "id": "T018-3",
+        "Task Name": "Realtime updates + reduced motion",
+        "Description": "Subscribe to notification events, update list live, and respect reduced-motion preference for toasts.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "New notifications appear without refresh",
+          "Animations disabled when prefers-reduced-motion"
+        ],
+        "Dependencies": ["T017-1", "T018-2"]
+      }
+    ]
+  },
+  {
+    "id": "T019",
+    "Task Name": "Keyboard Shortcuts & Command Palette",
+    "Description": "Implement command palette (cmdk) with search + quick actions and register global shortcuts (`N`,`P`,`/`,`Cmd/Ctrl+K`) with focus management.",
+    "Assignee/Team": "Frontend",
+    "Priority": "Medium",
+    "Status": "To Do",
+    "Acceptance Criteria": [
+      "Command palette opens with Cmd/Ctrl+K, searchable for tasks/projects/actions",
+      "`N`,`P`,`/` shortcuts perform actions without conflicting with form inputs",
+      "Shortcut map documented in help modal and accessible description",
+      "Automated tests cover focus trapping and escape/close behavior"
+    ],
+    "Dependencies": ["T009", "T005"],
+    "Subtasks": [
+      {
+        "id": "T019-1",
+        "Task Name": "Shortcut registry",
+        "Description": "Create reusable hook/service to register global shortcuts with scope detection and cleanup.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Shortcuts disabled in input fields",
+          "Hook covered by unit tests"
+        ],
+        "Dependencies": ["T005-2"]
+      },
+      {
+        "id": "T019-2",
+        "Task Name": "Command palette UI",
+        "Description": "Integrate cmdk, load actions (navigate, create task/project), and wire search across tasks/projects.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Palette accessible via keyboard",
+          "Search results prioritized by recency"
+        ],
+        "Dependencies": ["T019-1", "T011-1"]
+      },
+      {
+        "id": "T019-3",
+        "Task Name": "Help modal + documentation",
+        "Description": "Add help modal listing shortcuts and provide docs link; ensure analytics capture usage.",
+        "Assignee/Team": "Frontend",
+        "Acceptance Criteria": [
+          "Modal accessible from header",
+          "PostHog event for shortcut usage"
+        ],
+        "Dependencies": ["T019-2"]
+      }
+    ]
+  },
+  {
+    "id": "T020",
+    "Task Name": "QA Automation & Accessibility Suite",
+    "Description": "Create testing plan across Vitest, RTL, Playwright, plus axe accessibility checks covering critical flows listed in PRD section 15.",
+    "Assignee/Team": "QA Engineering",
+    "Priority": "High",
+    "Status": "To Do",
+    "Acceptance Criteria": [
+      "Unit tests cover schema validation and key reducers/hooks",
+      "Component tests assert task list rendering, filters, and modals",
+      "Playwright E2E scripts cover create project, add task, drag status, invite user, upgrade flow",
+      "axe accessibility audits pass on dashboard, board, planner views"
+    ],
+    "Dependencies": ["T011", "T014", "T007"],
+    "Subtasks": [
+      {
+        "id": "T020-1",
+        "Task Name": "Unit test harness",
+        "Description": "Set up Vitest config, shared mocks, and baseline schema/util tests for backend/frontend packages.",
+        "Assignee/Team": "QA",
+        "Acceptance Criteria": [
+          "Vitest runs in CI",
+          "Coverage thresholds defined"
+        ],
+        "Dependencies": []
+      },
+      {
+        "id": "T020-2",
+        "Task Name": "Component & RTL tests",
+        "Description": "Write RTL tests for task list, filters, modals, and command palette interactions.",
+        "Assignee/Team": "QA",
+        "Acceptance Criteria": [
+          "Snapshots avoided; assertions semantic",
+          "Accessibility queries used"
+        ],
+        "Dependencies": ["T011-3", "T009-2", "T019-2"]
+      },
+      {
+        "id": "T020-3",
+        "Task Name": "Playwright E2E + axe checks",
+        "Description": "Automate end-to-end flows and integrate axe scans on core pages during CI run.",
+        "Assignee/Team": "QA",
+        "Acceptance Criteria": [
+          "E2E covers create project/task, drag, invite, upgrade",
+          "Accessibility violations fail build"
+        ],
+        "Dependencies": ["T014-3", "T008-3", "T015-3"]
+      }
+    ]
+  },
+  {
+    "id": "T021",
+    "Task Name": "Monitoring, Analytics & Error Tracking",
+    "Description": "Integrate Sentry for error logging and PostHog for product analytics, with dashboards for metrics in PRD section 13.",
+    "Assignee/Team": "DevOps",
+    "Priority": "Medium",
+    "Status": "To Do",
+    "Acceptance Criteria": [
+      "Sentry DSN configured server/client with release tagging and source maps",
+      "PostHog tracks key events (task_created, drag_completed, upgrade_click) respecting privacy",
+      "Performance budget metrics (TTFI, drag latency) logged via web vitals hooks",
+      "Runbooks for alert thresholds reviewed with team"
+    ],
+    "Dependencies": ["T002", "T011"],
+    "Subtasks": [
+      {
+        "id": "T021-1",
+        "Task Name": "Sentry integration",
+        "Description": "Add Sentry SDK to Next.js client/server bundles with release/version tagging and source map upload in CI.",
+        "Assignee/Team": "DevOps",
+        "Acceptance Criteria": [
+          "Errors grouped with workspace context",
+          "Alert routing configured"
+        ],
+        "Dependencies": []
+      },
+      {
+        "id": "T021-2",
+        "Task Name": "PostHog event taxonomy",
+        "Description": "Define tracking plan, instrument key UI actions, and ensure privacy compliance toggles.",
+        "Assignee/Team": "Product Analytics",
+        "Acceptance Criteria": [
+          "Events documented in tracking spec",
+          "Opt-out respected"
+        ],
+        "Dependencies": ["T021-1"]
+      },
+      {
+        "id": "T021-3",
+        "Task Name": "Performance metrics + runbooks",
+        "Description": "Capture web vitals, drag latency logs, create dashboards, and document runbooks for alerts.",
+        "Assignee/Team": "DevOps",
+        "Acceptance Criteria": [
+          "TTFI, drag latency charts available",
+          "Runbook reviewed with team"
+        ],
+        "Dependencies": ["T021-2"]
+      }
+    ]
+  },
+  {
+    "id": "T022",
+    "Task Name": "Product Documentation & Release Playbook",
+    "Description": "Create internal docs covering architecture, deployment, feature flags, and user-facing help center articles for major features.",
+    "Assignee/Team": "Technical Writing + PM",
+    "Priority": "Medium",
+    "Status": "To Do",
+    "Acceptance Criteria": [
+      "README or handbook updated with setup, env vars, deployment steps",
+      "Feature-specific guides (Board, Planner, Inbox, Billing) drafted with screenshots",
+      "FAQ answers open questions (guest commenting, billing lock states) and highlight limitations",
+      "Launch checklist enumerates QA sign-off, analytics verification, and rollback plan"
+    ],
+    "Dependencies": ["T020"],
+    "Subtasks": [
+      {
+        "id": "T022-1",
+        "Task Name": "Architecture & ops docs",
+        "Description": "Document system architecture, env requirements, deployment pipeline, and feature flag strategy.",
+        "Assignee/Team": "Technical Writing",
+        "Acceptance Criteria": [
+          "Docs stored in repo handbook",
+          "Reviewed by lead engineer"
+        ],
+        "Dependencies": []
+      },
+      {
+        "id": "T022-2",
+        "Task Name": "Feature guides",
+        "Description": "Draft user-facing guides for Board, Planner, Inbox, Billing with annotated screenshots and tips.",
+        "Assignee/Team": "PM + Writing",
+        "Acceptance Criteria": [
+          "Each guide includes step-by-step instructions",
+          "Screenshots updated for GA UI"
+        ],
+        "Dependencies": ["T014-3", "T015-3", "T018-3", "T008-3"]
+      },
+      {
+        "id": "T022-3",
+        "Task Name": "Launch checklist",
+        "Description": "Compile release readiness checklist covering QA sign-off, analytics validation, rollback plan, and stakeholder approvals.",
+        "Assignee/Team": "PM",
+        "Acceptance Criteria": [
+          "Checklist stored in Notion/handbook",
+          "All owners assigned before launch"
+        ],
+        "Dependencies": ["T020-3", "T021-3"]
+      }
+    ]
+  }
+]

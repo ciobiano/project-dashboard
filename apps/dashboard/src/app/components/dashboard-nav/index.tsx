@@ -1,20 +1,16 @@
 "use client";
 
 import {
+  AlertCircle,
   CalendarDays,
-  ChevronDown,
   ChevronsUpDown,
-  CornerDownRight,
-  FileText,
-  Folder,
   LayoutDashboard,
   Mail,
   MessagesSquare,
-  Package2,
   PieChart,
-  Plus,
   Settings,
 } from "lucide-react";
+import { useMemo } from "react";
 
 import {
   Sidebar,
@@ -25,6 +21,13 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { WorkspaceTree } from "./workspace-tree";
+import { WorkspaceSwitcher } from "./workspace-switcher";
+import { NewFolderDialog } from "./new-folder-dialog";
+import { useWorkspaceTree } from "@/hooks/use-workspace-tree";
+import { useSelectedWorkspace } from "@/hooks/use-selected-workspace";
+import { useCreateFolder } from "@/hooks/use-create-folder";
 
 const mainMenu = [
   {
@@ -38,31 +41,52 @@ const mainMenu = [
   { label: "Calendar", icon: CalendarDays, href: "#" },
 ];
 
-const clientProjects = [
-  "Brand Identity Refresh",
-  "Crypto Mobile App",
-  "E-Commerce Revamp",
-  "AI Agent Dashboard",
-];
+const DEFAULT_WORKSPACE_ID = "ws_acme-ops";
 
 export function DashboardNav() {
+  const {
+    workspaces,
+    workspaceId,
+    selectWorkspace,
+    activeWorkspace,
+    query: workspacesQuery,
+  } = useSelectedWorkspace({ defaultWorkspaceId: DEFAULT_WORKSPACE_ID });
+  const { data, isLoading, isError, error } = useWorkspaceTree(workspaceId);
+  const createFolder = useCreateFolder();
+
+  const folders = useMemo(() => {
+    if (!data) {
+      return [];
+    }
+
+    return [...data.folders]
+      .sort((a, b) => a.order - b.order)
+      .map((folder) => ({
+        ...folder,
+        projects: [...folder.projects].sort((a, b) => a.order - b.order),
+      }));
+  }, [data]);
+
+  const currentWorkspaceSummary = activeWorkspace ?? data?.workspace ?? null;
+
+  const workspaceName = currentWorkspaceSummary?.name ?? "Workspace";
+  const workspaceSlug = currentWorkspaceSummary?.slug ?? "select-workspace";
+  const workspaceInitials = workspaceName
+    .split(" ")
+    .map((value) => value[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
   return (
     <Sidebar className="bg-white text-slate-900 dark:bg-sidebar dark:text-white">
       <SidebarHeader className="border-b border-slate-200 px-4 py-5 dark:border-white/5">
-        <div className="flex items-center gap-3 rounded-2xl bg-slate-900/5 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] dark:bg-accent">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-b from-zinc-100 to-zinc-300 text-slate-900">
-            <Package2 className="h-6 w-6" />
-          </div>
-          <div className="flex-1 ">
-            <p className=" text-slate-500 dark:text-white/70">
-              Workspace
-            </p>
-            <div className="flex items-center justify-between gap-2 text-base font-semibold">
-              Project Team
-              <ChevronsUpDown className="h-4 w-4 text-slate-500 dark:text-white/60" />
-            </div>
-          </div>
-        </div>
+        <WorkspaceSwitcher
+          workspaces={workspaces}
+          activeWorkspaceId={workspaceId}
+          onSelect={selectWorkspace}
+          isLoading={workspacesQuery.isLoading}
+        />
       </SidebarHeader>
 
       <SidebarContent className="flex flex-1 flex-col justify-between">
@@ -102,53 +126,31 @@ export function DashboardNav() {
               Folder
             </p>
             <div className="space-y-1 text-slate-600 dark:text-white/70">
-              <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-slate-900/5 dark:hover:bg-white/5">
-                <Folder className="h-4 w-4" />
-                Product Launch
-              </button>
-
-              <div className="rounded-2xl">
-                <div className="flex items-center justify-between rounded-xl bg-slate-900/5 px-3 py-2 text-slate-800 shadow-[0_10px_35px_rgba(0,0,0,0.05)] dark:bg-accent dark:text-white dark:shadow-[0_10px_35px_rgba(0,0,0,0.5)]">
-                  <div className="flex items-center gap-3">
-                    <Folder className="h-4 w-4" />
-                    Client Projects
-                  </div>
-                  <ChevronDown className="h-4 w-4 text-slate-500 dark:text-white/60" />
-                </div>
-                <div className="mt-2 space-y-1 pl-2">
-                  {clientProjects.map((project) => (
-                    <button
-                      key={project}
-                      className="group flex w-full items-center gap-1 rounded-xl px-3 py-1.5 text-left transition hover:bg-slate-900/5 dark:hover:bg-white/5"
-                    >
-                      <CornerDownRight className="h-3.5 w-3.5 text-slate-400 dark:text-white/50" />
-                      <FileText className="h-4 w-4 text-slate-500 dark:text-white/60" />
-                      <span
-                        className={
-                          project === "E-Commerce Revamp"
-                            ? "text-slate-900 dark:text-white"
-                            : undefined
-                        }
-                      >
-                        {project}
-                      </span>
-                    </button>
+              {isLoading && (
+                <div className="space-y-2">
+                  {[0, 1, 2].map((index) => (
+                    <Skeleton key={index} className="h-10 w-full rounded-xl" />
                   ))}
                 </div>
-              </div>
-
-              <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-slate-900/5 dark:hover:bg-white/5">
-                <Folder className="h-4 w-4" />
-                Website Redesign
-              </button>
-              <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-slate-900/5 dark:hover:bg-white/5">
-                <Folder className="h-4 w-4" />
-                Marketing Sprint
-              </button>
-              <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-slate-900/5 dark:hover:bg-white/5">
-                <Plus className="h-4 w-4" />
-                New Folder
-              </button>
+              )}
+              {isError && (
+                <div className="flex items-center gap-2 rounded-xl border border-red-200/80 bg-red-50 px-3 py-2 text-xs text-red-600 dark:border-red-500/30 dark:bg-red-500/20 dark:text-red-100">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>{error?.message ?? "Failed to load workspace."}</span>
+                </div>
+              )}
+              {!isLoading && !isError && (
+                <WorkspaceTree
+                  workspaceId={workspaceId}
+                  folders={folders}
+                />
+              )}
+              <NewFolderDialog
+                onCreate={(name) =>
+                  createFolder.mutateAsync({ workspaceId, name })
+                }
+                isCreating={createFolder.isPending}
+              />
             </div>
           </div>
         </div>
@@ -168,14 +170,14 @@ export function DashboardNav() {
           <div className="-mb-2 rounded-2xl border border-slate-200 p-3 text-slate-700 dark:border-white/5 dark:text-white">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900/5 text-2xl font-semibold dark:bg-black/30">
-                8
+                {workspaceInitials || "WS"}
               </div>
               <div>
                 <p className="text-base font-semibold text-slate-900 dark:text-white">
-                  Kree8 Studio
+                  {workspaceName}
                 </p>
                 <p className="text-xs text-slate-500 dark:text-white/70">
-                  kree8studio@gmail.com
+                  {workspaceSlug}@example.com
                 </p>
               </div>
               <ChevronsUpDown className="ml-auto h-4 w-4 text-slate-400 dark:text-white/60" />

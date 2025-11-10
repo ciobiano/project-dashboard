@@ -1,27 +1,28 @@
-import { Fragment } from "react";
+import { Fragment, type ReactNode } from "react";
 import {
   CalendarDays,
   GitBranch,
   KanbanSquare,
   LayoutDashboard,
 } from "lucide-react";
+import { useDroppable } from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 
 import { TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import type { TaskSection } from "@/types/task-board";
 
 import {
   EmptyState,
   TablePaginationControls,
   TaskRow,
-  TaskSection,
+  TaskRowPreview,
   TaskSectionHeader,
   TaskTableHeader,
 } from "./task-board-elements";
-
-export { EmptyState };
-export type { Task, TaskSection } from "./task-board-elements";
-
-export const DEFAULT_PAGE_SIZE = 5;
 
 export const boardTabs = [
   { label: "Overview", icon: LayoutDashboard, value: "overview" },
@@ -67,6 +68,8 @@ export function BoardTabs({ tabs, className }: BoardTabsProps) {
   );
 }
 
+export const DEFAULT_PAGE_SIZE = 5;
+
 interface PaginatedTaskSectionProps {
   section: TaskSection;
   page: number;
@@ -98,15 +101,34 @@ export function PaginatedTaskSection({
     <section className="space-y-5">
       <TaskSectionHeader
         title={section.title}
-        count={section.count}
+        count={section.tasks.length}
         accentClass={section.accent}
       />
-      <div className="overflow-hidden">
+      <DroppableTaskList
+        sectionId={section.id}
+        tasks={paginatedTasks}
+        className="overflow-hidden rounded-lg border border-border/60"
+      >
         <TaskTableHeader />
-        <div className="divide-y divide-border/30">
-          {paginatedTasks.map((task) => (
-            <TaskRow key={task.title} task={task} onEdit={onEditTask} />
-          ))}
+        <div className="divide-y divide-border">
+          <SortableContext
+            id={section.id}
+            items={paginatedTasks.map((task) => task.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            {paginatedTasks.map((task) => {
+              const globalIndex = section.tasks.findIndex(
+                (current) => current.id === task.id,
+              );
+              return (
+                <TaskRow
+                  key={task.id}
+                  task={task}
+                  onEdit={onEditTask}
+                />
+              );
+            })}
+          </SortableContext>
           {paginatedTasks.length === 0 && (
             <div className="px-4 py-6 text-sm text-muted-foreground">
               No tasks on this page.
@@ -118,7 +140,44 @@ export function PaginatedTaskSection({
           pageCount={totalPages}
           onPageChange={handlePageChange}
         />
-      </div>
+      </DroppableTaskList>
     </section>
   );
 }
+
+function DroppableTaskList({
+  sectionId,
+  tasks,
+  className,
+  children,
+}: {
+  sectionId: string;
+  tasks: TaskSection["tasks"];
+  className?: string;
+  children: ReactNode;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: sectionId,
+    data: {
+      type: "container",
+      sectionId,
+      empty: tasks.length === 0,
+    },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "overflow-hidden transition-all",
+        isOver && "border border-dashed border-primary/60 bg-primary/5",
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+export { EmptyState, TaskRowPreview } from "./task-board-elements";
+export type { Task, TaskSection } from "@/types/task-board";

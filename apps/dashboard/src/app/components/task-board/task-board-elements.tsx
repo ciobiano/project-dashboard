@@ -1,27 +1,36 @@
-import { memo } from "react";
+import type { CSSProperties } from "react";
+import { forwardRef, memo } from "react";
 import {
+  GripVertical,
   Inbox,
   SignalHigh,
   SignalLow,
   SignalMedium,
 } from "lucide-react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import type { Task } from "@/types/task-board";
 
-export interface Task {
-  title: string;
-  description: string;
-  priority: "High" | "Medium" | "Normal";
-  assignees: string[];
-}
-
-export interface TaskSection {
-  title: string;
-  count: number;
-  accent: string;
-  tasks: Task[];
-}
+const PRIORITY_STYLES: Record<
+  Task["priority"],
+  { badge: string; icon: typeof SignalHigh }
+> = {
+  High: {
+    badge: "bg-red-500/5 border border-red-500/20",
+    icon: SignalHigh,
+  },
+  Medium: {
+    badge: "bg-amber-500/10",
+    icon: SignalMedium,
+  },
+  Normal: {
+    badge: "bg-emerald-500/10",
+    icon: SignalLow,
+  },
+};
 
 export function EmptyState({
   title,
@@ -77,24 +86,6 @@ export function TaskTableHeader() {
   );
 }
 
-const PRIORITY_STYLES: Record<
-  Task["priority"],
-  { badge: string; icon: typeof SignalHigh }
-> = {
-  High: {
-    badge: "bg-red-500/5 border border-red-500/20",
-    icon: SignalHigh,
-  },
-  Medium: {
-    badge: "bg-amber-500/10",
-    icon: SignalMedium,
-  },
-  Normal: {
-    badge: "bg-emerald-500/10",
-    icon: SignalLow,
-  },
-};
-
 function PriorityBadge({ priority }: { priority: Task["priority"] }) {
   const { badge, icon: Icon } = PRIORITY_STYLES[priority];
   return (
@@ -134,35 +125,114 @@ export interface TaskRowProps {
   onEdit?: (task: Task) => void;
 }
 
-function TaskRowComponent({ task, onEdit }: TaskRowProps) {
+type SortableInstance = ReturnType<typeof useSortable>;
+
+interface TaskRowFrameProps extends TaskRowProps {
+  className?: string;
+  style?: CSSProperties;
+  isOverlay?: boolean;
+  attributes?: SortableInstance["attributes"];
+  listeners?: SortableInstance["listeners"];
+}
+
+const TaskRowFrame = forwardRef<HTMLDivElement, TaskRowFrameProps>(
+  (
+    {
+      task,
+      onEdit,
+      className,
+      style,
+      isOverlay = false,
+      attributes,
+      listeners,
+    },
+    ref,
+  ) => {
+    return (
+      <div
+        ref={ref}
+        style={style}
+        {...attributes}
+        {...listeners}
+        className={cn(
+          "grid grid-cols-[2fr_3fr_minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-4 rounded-lg border border-transparent px-4 py-4 transition-shadow",
+          isOverlay
+            ? "bg-card shadow-2xl"
+            : "bg-background hover:border-border/60 hover:shadow-md",
+          className,
+        )}
+      >
+        <div className="flex items-center gap-3">
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+          <span className="font-medium text-foreground">{task.title}</span>
+        </div>
+        <p className="text-sm text-muted-foreground">{task.description}</p>
+        <div className="flex">
+          <PriorityBadge priority={task.priority} />
+        </div>
+        <div className="flex">
+          <AssigneeStack assignees={task.assignees} />
+        </div>
+        <div className="flex justify-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs"
+            onClick={() => onEdit?.(task)}
+            disabled={isOverlay}
+          >
+            Edit
+          </Button>
+        </div>
+      </div>
+    );
+  },
+);
+TaskRowFrame.displayName = "TaskRowFrame";
+
+function TaskRowComponent({
+  task,
+  onEdit,
+}: TaskRowProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({
+      id: task.id,
+      data: {
+        type: "task",
+        sectionId: task.status,
+        task,
+      },
+    });
+
+  const style: CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : undefined,
+  };
+
   return (
-    <div className="grid grid-cols-[2fr_3fr_minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-4 px-4 py-4 ">
-      <div className="flex items-center gap-2">
-        <span className="text-accent-foreground">⋮⋮</span>
-        <span className="font-medium text-foreground">{task.title}</span>
-      </div>
-      <p>{task.description}</p>
-      <div className="flex">
-        <PriorityBadge priority={task.priority} />
-      </div>
-      <div className="flex">
-        <AssigneeStack assignees={task.assignees} />
-      </div>
-      <div className="flex justify-center">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-xs"
-          onClick={() => onEdit?.(task)}
-        >
-          Edit
-        </Button>
-      </div>
-    </div>
+    <TaskRowFrame
+      ref={setNodeRef}
+      task={task}
+      onEdit={onEdit}
+      attributes={attributes}
+      listeners={listeners}
+      className={cn(isDragging && "border-secondary bg-card")}
+      style={style}
+    />
   );
 }
 
 export const TaskRow = memo(TaskRowComponent);
+
+export function TaskRowPreview({ task }: { task: Task }) {
+  return (
+    <TaskRowFrame
+      task={task}
+      isOverlay
+    />
+  );
+}
 
 export function TablePaginationControls({
   page,
