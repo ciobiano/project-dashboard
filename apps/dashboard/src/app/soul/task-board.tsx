@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -17,7 +17,11 @@ import { cn } from "@/lib/utils";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import type { TaskSection } from "@/types/task-board";
 
-import { useTaskBoardState } from "@/hooks/use-task-board-state";
+import {
+  useTaskBoardState,
+  type CreateTaskInput,
+} from "@/hooks/use-task-board-state";
+import { QuickActionCards } from "./task-board/quick-action-cards";
 import {
   BoardTabs,
   DEFAULT_PAGE_SIZE,
@@ -125,6 +129,9 @@ export function TaskBoard({ className }: TaskBoardProps) {
   const [sectionPages, setSectionPages] = useState<Record<string, number>>(() =>
     Object.fromEntries(INITIAL_SECTIONS.map(({ id }) => [id, 0])),
   );
+  const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(
+    null,
+  );
 
   const {
     sections,
@@ -132,6 +139,7 @@ export function TaskBoard({ className }: TaskBoardProps) {
     handleDragStart,
     handleDragEnd,
     handleDragCancel,
+    createTask,
   } = useTaskBoardState({ initialSections: INITIAL_SECTIONS });
 
   const sensors = useSensors(
@@ -153,8 +161,50 @@ export function TaskBoard({ className }: TaskBoardProps) {
     }));
   };
 
+  const handleTaskCreate = useCallback(
+    async (input: CreateTaskInput) => {
+      const created = await createTask(input);
+      setSectionPages((previous) => ({
+        ...previous,
+        [created.status]: 0,
+      }));
+      setHighlightedTaskId(created.id);
+      return created;
+    },
+    [createTask],
+  );
+
+  useEffect(() => {
+    if (!highlightedTaskId) {
+      return;
+    }
+    if (typeof window === "undefined" || typeof document === "undefined") {
+      return;
+    }
+    const focusRow = () => {
+      const row = document.getElementById(`task-${highlightedTaskId}`);
+      if (row instanceof HTMLElement) {
+        row.scrollIntoView({ behavior: "smooth", block: "center" });
+        row.focus({ preventScroll: true });
+      }
+    };
+    const frame = window.requestAnimationFrame(focusRow);
+    const timeout = window.setTimeout(() => {
+      setHighlightedTaskId(null);
+    }, 2400);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timeout);
+    };
+  }, [highlightedTaskId]);
+
   return (
     <div className={cn("col-span-4", className)}>
+      <QuickActionCards
+        sections={sections}
+        onCreateTask={handleTaskCreate}
+        className="mb-8"
+      />
       <Tabs defaultValue="overview" className="space-y-10">
         <BoardTabs tabs={boardTabs} />
 
@@ -174,6 +224,7 @@ export function TaskBoard({ className }: TaskBoardProps) {
                   page={sectionPages[section.id] ?? 0}
                   pageSize={DEFAULT_PAGE_SIZE}
                   onPageChange={(nextPage) => goToPage(section.id, nextPage)}
+                  highlightTaskId={highlightedTaskId}
                 />
               );
             })}

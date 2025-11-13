@@ -123,6 +123,7 @@ function AssigneeStack({ assignees }: { assignees: string[] }) {
 export interface TaskRowProps {
   task: Task;
   onEdit?: (task: Task) => void;
+  isHighlighted?: boolean;
 }
 
 type SortableInstance = ReturnType<typeof useSortable>;
@@ -143,6 +144,7 @@ const TaskRowFrame = forwardRef<HTMLDivElement, TaskRowFrameProps>(
       className,
       style,
       isOverlay = false,
+      isHighlighted = false,
       attributes,
       listeners,
     },
@@ -154,11 +156,17 @@ const TaskRowFrame = forwardRef<HTMLDivElement, TaskRowFrameProps>(
         style={style}
         {...attributes}
         {...listeners}
+        id={isOverlay ? undefined : `task-${task.id}`}
+        data-task-row-id={isOverlay ? undefined : task.id}
+        tabIndex={isOverlay ? undefined : -1}
         className={cn(
           "grid grid-cols-[2fr_3fr_minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-4 rounded-lg border border-transparent px-4 py-4 transition-shadow",
           isOverlay
             ? "bg-card shadow-2xl"
             : "bg-background hover:border-border/60 hover:shadow-md",
+          isHighlighted &&
+            !isOverlay &&
+            "ring-2 ring-primary/60 ring-offset-2 ring-offset-background",
           className,
         )}
       >
@@ -193,6 +201,7 @@ TaskRowFrame.displayName = "TaskRowFrame";
 function TaskRowComponent({
   task,
   onEdit,
+  isHighlighted,
 }: TaskRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({
@@ -218,6 +227,7 @@ function TaskRowComponent({
       attributes={attributes}
       listeners={listeners}
       className={cn(isDragging && "border-secondary bg-card")}
+      isHighlighted={isHighlighted}
       style={style}
     />
   );
@@ -229,6 +239,7 @@ export function TaskRowPreview({ task }: { task: Task }) {
   return (
     <TaskRowFrame
       task={task}
+      isHighlighted={false}
       isOverlay
     />
   );

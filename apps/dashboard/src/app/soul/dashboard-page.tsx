@@ -1,6 +1,5 @@
 import { DashboardHeader } from "./dashboard-header";
 import { DashboardLayout } from "./dashboard-layout";
-import { MetricCards } from "./metric-cards";
 import { TaskBoard } from "./task-board";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { Zap } from "lucide-react";
@@ -22,7 +21,6 @@ export default function Dashboard() {
             </Alert>
           </div>
           <div className="space-y-10">
-            <MetricCards />
             <TaskBoard />
           </div>
         </main>

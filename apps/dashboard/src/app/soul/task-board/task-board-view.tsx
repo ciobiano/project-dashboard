@@ -76,6 +76,7 @@ interface PaginatedTaskSectionProps {
   pageSize?: number;
   onPageChange: (nextPage: number) => void;
   onEditTask?: (task: TaskSection["tasks"][number]) => void;
+  highlightTaskId?: string | null;
 }
 
 export function PaginatedTaskSection({
@@ -84,6 +85,7 @@ export function PaginatedTaskSection({
   pageSize = DEFAULT_PAGE_SIZE,
   onPageChange,
   onEditTask,
+  highlightTaskId,
 }: PaginatedTaskSectionProps) {
   const totalPages = Math.max(1, Math.ceil(section.tasks.length / pageSize));
   const currentPage = Math.min(page, totalPages - 1);
@@ -125,6 +127,7 @@ export function PaginatedTaskSection({
                   key={task.id}
                   task={task}
                   onEdit={onEditTask}
+                  isHighlighted={highlightTaskId === task.id}
                 />
               );
             })}

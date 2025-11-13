@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import DashboardPage from "./components/dashboard-page";
+import DashboardPage from "./soul/dashboard-page";
 
 export const metadata: Metadata = {
   title: "Acme Dashboard",
